@@ -9,3 +9,4 @@ chrono = "0.4.38"
 serde = { version = "1.0.202", features = ["derive"] }
 uuid = { version = "1.8.0", features = ["v4", "fast-rng", "serde"] }
 colored = "2.1.0"
+sqlite = "0.36.0"
