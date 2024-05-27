@@ -1,4 +1,5 @@
 use std::path::Path;
+use sqlite::State;
 
 use crate::api::location::Location;
 use crate::api::user::User;
@@ -57,4 +58,32 @@ pub fn add_location_to_user_db(data: Location) {
     let db_file = format!("data/db/users/{}/location_data.db", data.get_uuid());
     let connection = sqlite::open(db_file).unwrap();
     connection.execute(format!("INSERT INTO location (latitude, longitude, gathered_at) VALUES ({}, {}, {})", data.get_lat_long().0, data.get_lat_long().1, data.get_gathered_at())).unwrap()
+}
+
+// TODO: Learn more about lifetimes!
+/// Fetches the list of users from the database.
+///
+/// # Returns
+/// Either
+/// * [`Ok`] With a [`Vec<String>`] with a list of user UUIDs.
+/// * [`Err`] With an error message.
+pub fn fetch_users() -> Result<Vec<String>, &'static str> {
+    let users_db = Path::new("./data/db/users/users.db");
+    let mut users: Vec<String> = Vec::new();
+    // Check if the file even exists
+    if !users_db.exists() {
+        return Err("The users database file was not found. Perhaps there are no users registered yet?")
+    }
+
+    let query = "SELECT name FROM users";
+    let connection = sqlite::open("data/db/users/users.db").unwrap();
+
+    let mut statement = connection.prepare(query).unwrap();
+
+    while let Ok(State::Row) = statement.next() {
+        let uuid = statement.read::<String, _>("name").unwrap();
+        users.push(uuid);
+    }
+
+    Ok(users)
 }

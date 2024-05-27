@@ -1,13 +1,13 @@
 use std::fmt::Debug;
 
 use actix_web::{get, HttpRequest, HttpResponse, post, Responder};
-use actix_web::web::{Json, Path};
+use actix_web::web::{Json};
 use chrono;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::filesystem::initialize_new_user;
-use crate::logging::info;
+use crate::filesystem::{fetch_users, initialize_new_user};
+use crate::logging::{error, info};
 
 
 /// The [`User`] struct represents a user in the system.
@@ -45,9 +45,33 @@ pub async fn create_user(req_body: Json<UserRequest>) -> impl Responder {
     HttpResponse::Created().body(new_user.uuid.to_string())
 }
 
-#[get("/get_user/{id}")]
-pub async fn get_user(path: Path<(Uuid, )>, request: HttpRequest) -> HttpResponse {
-    //TODO
-    info(format!("IP {} requested info from user ID:{}.", request.peer_addr().unwrap().ip(), path.into_inner().0).as_str(), Some("get_user"));
-    HttpResponse::NotImplemented().body("<h1>Not implemented.</h1>")
+
+/// Get a list of all users in the system.
+/// # Returns
+/// A JSON array of all the users in the system.
+/// # Errors
+/// If the lookup of users fails, an internal server error is returned.
+#[get("/list_users")]
+pub async fn get_user(request: HttpRequest) -> HttpResponse {
+    // We build a shitty JSON array by hand. This is fine for now but not future-proof.
+    let mut response = String::from("[");
+
+    let users = match fetch_users() {
+        Ok(users) => users,
+        Err(_) => {
+            error(format!("IP {} requested list of users, but the lookup failed.", request.peer_addr().unwrap().ip()).as_str(), Some("list_users"));
+            return HttpResponse::InternalServerError().body("Could not fetch users. Please try again later.");
+        }
+    };
+
+    for user_uuid in users.iter() {
+        // println!("User {:?}", user_uuid);
+        response.push_str(format!("\"{}\",", user_uuid).as_str());
+    }
+
+    response.pop(); // Remove the last comma.
+    response.push(']');
+
+    info(format!("IP {} requested list of users", request.peer_addr().unwrap().ip()).as_str(), Some("list_users"));
+    HttpResponse::Ok().body(response)
 }
