@@ -14,7 +14,7 @@ use crate::logging::info;
 #[derive(Debug)]
 pub struct User {
     pub uuid: Uuid,
-    pub device_id: String,
+    pub device_name: String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -32,7 +32,7 @@ impl User {
         User {
             uuid: Uuid::new_v4(),
             created_at: Utc::now(),
-            device_id: device_identifier,
+            device_name: device_identifier,
         }
     }
 }

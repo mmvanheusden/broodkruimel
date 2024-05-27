@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use actix_web::{App, get, HttpResponse, HttpServer, Responder};
 use crate::filesystem::initialize_file_structure;
 
@@ -21,6 +19,7 @@ async fn main() -> std::io::Result<()> {
             .service(favicon)
             .service(api::user::create_user)
             .service(api::user::get_user)
+            .service(api::location::add_location_to_user)
     })
         .bind(("127.0.0.1", PORT))?
         .run()

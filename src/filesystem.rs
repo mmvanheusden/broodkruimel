@@ -1,18 +1,18 @@
 use std::path::Path;
+
+use crate::api::location::Location;
 use crate::api::user::User;
 use crate::logging;
-
-
 
 /// Create a folder for the user, and initialize the database where the user data will be stored.
 pub fn initialize_new_user(user: &User) {
     create_user_dir(user.uuid.to_string().as_str());
-    let filename = format!("data/db/users/{}/location-data.db", &user.uuid.to_string().as_str());
+    let filename = format!("data/db/users/{}/location_data.db", &user.uuid.to_string().as_str());
     let connection = sqlite::open(filename).unwrap();
-    let query = "CREATE TABLE location (latitude INTEGER, longitude INTEGER);";
+    let query = "CREATE TABLE location (latitude INTEGER, longitude INTEGER, gathered_at INTEGER);";
 
     connection.execute(query).unwrap();
-    logging::info(format!("Created database for user {}.", &user.uuid).as_str(), Some("database"));
+    logging::info(format!("Created database for user {}. (device name: {})", &user.uuid, &user.device_name).as_str(), Some("database"));
     integrate_user(user);
 }
 
@@ -34,10 +34,10 @@ fn integrate_user(user: &User) {
     // If the database does not exist, modify the query to also create the table.
     if !file.exists() {
         // Writes header and user.
-        query = format!("CREATE TABLE users (name TEXT, device_name TEXT, created_at INTEGER); INSERT INTO users (name, device_name, created_at) VALUES ('{}','{}', {});", user.uuid,user.device_id, user.created_at.timestamp());
+        query = format!("CREATE TABLE users (name TEXT, device_name TEXT, created_at INTEGER); INSERT INTO users (name, device_name, created_at) VALUES ('{}','{}', {});", user.uuid, user.device_name, user.created_at.timestamp());
     } else {
         // Only writes user.
-        query = format!("INSERT INTO users (name, device_name, created_at) VALUES ('{}','{}', {});", user.uuid,user.device_id, user.created_at.timestamp());
+        query = format!("INSERT INTO users (name, device_name, created_at) VALUES ('{}','{}', {});", user.uuid, user.device_name, user.created_at.timestamp());
     }
 
     let connection = sqlite::open("data/db/users/users.db").unwrap();
@@ -50,4 +50,11 @@ pub async fn initialize_file_structure() {
     if !path.exists() {
         std::fs::create_dir_all(path).unwrap();
     }
+}
+
+/// Adds a [`Location`] to a user's database.
+pub fn add_location_to_user_db(data: Location) {
+    let db_file = format!("data/db/users/{}/location_data.db", data.get_uuid());
+    let connection = sqlite::open(db_file).unwrap();
+    connection.execute(format!("INSERT INTO location (latitude, longitude, gathered_at) VALUES ({}, {}, {})", data.get_lat_long().0, data.get_lat_long().1, data.get_gathered_at())).unwrap()
 }
