@@ -59,7 +59,7 @@ pub async fn get_user(request: HttpRequest) -> HttpResponse {
     let users = match fetch_users() {
         Ok(users) => users,
         Err(_) => {
-            error(format!("IP {} requested list of users, but the lookup failed.", request.peer_addr().unwrap().ip()).as_str(), Some("list_users"));
+            error(format!("IP {} requested list of users, but the lookup failed.", request.peer_addr().unwrap().ip()), Some("list_users"));
             return HttpResponse::InternalServerError().body("Could not fetch users. Please try again later.");
         }
     };
@@ -72,6 +72,6 @@ pub async fn get_user(request: HttpRequest) -> HttpResponse {
     response.pop(); // Remove the last comma.
     response.push(']');
 
-    info(format!("IP {} requested list of users", request.peer_addr().unwrap().ip()).as_str(), Some("list_users"));
+    info(format!("IP {} requested list of users", request.peer_addr().unwrap().ip()), Some("list_users"));
     HttpResponse::Ok().body(response)
 }

@@ -12,7 +12,7 @@ const PORT: u16 = 8080;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     initialize_file_structure().await;
-    info(format!("Server up at http://127.0.0.1:{}", PORT).as_str(), None);
+    info(format!("Server up at http://127.0.0.1:{}", PORT), None);
     HttpServer::new(|| {
         App::new()
             .service(hello)

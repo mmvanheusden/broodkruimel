@@ -55,6 +55,6 @@ impl Location {
 pub async fn add_location_to_user(req_body: Json<LocationRequest>) -> impl Responder {
     let location = Location::new(req_body.uuid.clone(), req_body.latitude, req_body.longitude, req_body.gathered_at);
     add_location_to_user_db(location);
-    info(format!("User {} has send their location at {}", req_body.uuid, DateTime::from_timestamp(req_body.gathered_at, 0).unwrap()).as_str(), Some("push_location"));
+    info(format!("User {} has send their location at {}", req_body.uuid, DateTime::from_timestamp(req_body.gathered_at, 0).unwrap()), Some("push_location"));
     HttpResponse::Ok().finish()
 }

@@ -1,4 +1,5 @@
 use std::path::Path;
+
 use sqlite::State;
 
 use crate::api::location::Location;
@@ -8,12 +9,12 @@ use crate::logging;
 /// Create a folder for the user, and initialize the database where the user data will be stored.
 pub fn initialize_new_user(user: &User) {
     create_user_dir(user.uuid.to_string().as_str());
-    let filename = format!("data/db/users/{}/location_data.db", &user.uuid.to_string().as_str());
+    let filename = format!("data/db/users/{}/location_data.db", &user.uuid);
     let connection = sqlite::open(filename).unwrap();
     let query = "CREATE TABLE location (latitude INTEGER, longitude INTEGER, gathered_at INTEGER);";
 
     connection.execute(query).unwrap();
-    logging::info(format!("Created database for user {}. (device name: {})", &user.uuid, &user.device_name).as_str(), Some("database"));
+    logging::info(format!("Created database for user {}. (device name: {})", &user.uuid, &user.device_name), Some("database"));
     integrate_user(user);
 }
 
@@ -72,7 +73,7 @@ pub fn fetch_users() -> Result<Vec<String>, &'static str> {
     let mut users: Vec<String> = Vec::new();
     // Check if the file even exists
     if !users_db.exists() {
-        return Err("The users database file was not found. Perhaps there are no users registered yet?")
+        return Err("The users database file was not found. Perhaps there are no users registered yet?");
     }
 
     let query = "SELECT name FROM users";
