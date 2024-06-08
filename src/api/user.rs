@@ -6,7 +6,7 @@ use chrono;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::filesystem::{fetch_users, initialize_new_user};
+use crate::filesystem::database::{fetch_users, initialize_new_user};
 use crate::logging::{error, info};
 
 

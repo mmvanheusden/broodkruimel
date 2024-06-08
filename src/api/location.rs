@@ -1,9 +1,12 @@
+use std::str::FromStr;
 use actix_web::{HttpResponse, post, Responder};
 use actix_web::web::Json;
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::filesystem::add_location_to_user_db;
+use crate::filesystem::database::add_location_to_user_db;
+use crate::filesystem::gps::{add_location_to_gpx};
 use crate::logging::info;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -55,6 +58,7 @@ impl Location {
 pub async fn add_location_to_user(req_body: Json<LocationRequest>) -> impl Responder {
     let location = Location::new(req_body.uuid.clone(), req_body.latitude, req_body.longitude, req_body.gathered_at);
     add_location_to_user_db(location);
+    add_location_to_gpx(Uuid::from_str(req_body.uuid.clone().as_str()).unwrap(), (req_body.longitude as f64,req_body.latitude as f64));
     info(format!("User {} has send their location at {}", req_body.uuid, DateTime::from_timestamp(req_body.gathered_at, 0).unwrap()), Some("push_location"));
     HttpResponse::Ok().finish()
 }

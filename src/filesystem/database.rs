@@ -1,6 +1,9 @@
+use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 
 use sqlite::State;
+use uuid::Uuid;
 
 use crate::api::location::Location;
 use crate::api::user::User;
@@ -15,21 +18,38 @@ pub fn initialize_new_user(user: &User) {
 
     connection.execute(query).unwrap();
     logging::info(format!("Created database for user {}. (device name: {})", &user.uuid, &user.device_name), Some("database"));
-    integrate_user(user);
+    add_user_to_users_db(user);
+    create_user_gpx(user.uuid);
 }
 
-/// Create user dir
+/// Create user directories
 fn create_user_dir(name: &str) {
     let path_string = format!("./data/db/users/{}", name);
     let path = Path::new(&path_string);
     if !path.exists() {
         std::fs::create_dir_all(path).unwrap();
     }
+
+    let path_string = format!("./data/gpx/users/{}", name);
+    let path = Path::new(&path_string);
+    if !path.exists() {
+        std::fs::create_dir_all(path).unwrap();
+    }
+}
+
+/// Create empty gpx file
+fn create_user_gpx(uuid: Uuid) {
+    let file_location = format!("./data/gpx/users/{}/location_data.gpx", uuid);
+    let mut file = File::create(&file_location).expect("create gpx error.");
+    
+    // write empty gpx track etc.
+    file.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx\n\tversion=\"1.1\"\n\tcreator=\"gpslog\">\n\n<trk>\n\t<name>gpslog</name>\n\t<trkseg>\n\t</trkseg>\n</gpx>").unwrap();
+    logging::info(format!("Created GPX file for user {}", uuid), Some("database"));
 }
 
 
-/// Append the user to the users' database. If the database does not exist, create it.
-fn integrate_user(user: &User) {
+/// Append the user to the users database. If the database does not exist, create it.
+fn add_user_to_users_db(user: &User) {
     let file = Path::new("./data/db/users/users.db");
     let query: String;
 
@@ -46,13 +66,6 @@ fn integrate_user(user: &User) {
     connection.execute(query).unwrap();
 }
 
-/// Create the folder structure where we write stuff later on.
-pub async fn initialize_file_structure() {
-    let path = Path::new("./data/db/users/");
-    if !path.exists() {
-        std::fs::create_dir_all(path).unwrap();
-    }
-}
 
 /// Adds a [`Location`] to a user's database.
 pub fn add_location_to_user_db(data: Location) {

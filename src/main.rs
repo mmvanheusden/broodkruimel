@@ -1,18 +1,20 @@
 use actix_web::{App, get, HttpResponse, HttpServer, Responder};
-use crate::filesystem::initialize_file_structure;
 
+use crate::filesystem::initialize_file_structure;
 use crate::logging::info;
 
 mod logging;
-mod filesystem;
 mod api;
+mod filesystem;
 
 const PORT: u16 = 8080;
+const APP_NAME: &str = "gpslog";
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // to_gpx("test.gpx").unwrap();
     initialize_file_structure().await;
-    info(format!("Server up at http://127.0.0.1:{}", PORT), None);
+    info(format!("Server up at http://127.0.0.1:{}", PORT), Some(APP_NAME));
     HttpServer::new(|| {
         App::new()
             .service(hello)
