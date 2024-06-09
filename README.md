@@ -1,7 +1,7 @@
-# gpslog
+# Broodkruimel
 ![GNU Affero General Public License logo](agplv3.png)
 
-A server written in Rust that stores real-time GPS data send from a client for the rest of your life.
+A server written in Rust that stores a personal GPS breadcrumb for the rest of your life.
 
 **Example use-cases:**  
 * **Déjà vu**  
