@@ -10,7 +10,7 @@ use crate::filesystem::database::{fetch_users, initialize_new_user};
 use crate::logging::{error, info};
 
 
-/// The [`User`] struct represents a user in the system.
+/// Represents a user in the system.
 #[derive(Debug)]
 pub struct User {
     pub uuid: Uuid,
@@ -18,7 +18,7 @@ pub struct User {
     pub created_at: DateTime<Utc>,
 }
 
-/// The [`UserRequest`] struct represents the request body for creating a new user. The json that is received should have a device_id field.  
+/// Represents the request body for creating a new user. The json that is received should have a device_id field.  
 /// This struct is used to deserialize the request body into a UserRequest struct and then create a new [`User`].
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UserRequest {

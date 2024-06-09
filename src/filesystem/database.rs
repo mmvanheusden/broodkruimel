@@ -11,40 +11,47 @@ use crate::logging;
 
 /// Create a folder for the user, and initialize the database where the user data will be stored.
 pub fn initialize_new_user(user: &User) {
-    create_user_dir(user.uuid.to_string().as_str());
+    init_user_filestructure(&user);
+    add_user_to_users_db(user);
+    logging::info(format!("Created database for user {}. (device name: {})", &user.uuid, &user.device_name), Some("database"));
+}
+
+/**
+ * * Creates a directory structure for the specified [`User`]
+ * * Creates empty database,gpx file for user.
+**/
+fn init_user_filestructure(user: &User) {
+    // DIRECTORIES
+    // db
+    let path_string = format!("./data/db/users/{}", &user.uuid);
+    let path = Path::new(&path_string);
+    if !path.exists() {
+        std::fs::create_dir_all(path).unwrap();
+    }
+
+    // gpx
+    let path_string = format!("./data/gpx/users/{}", &user.uuid);
+    let path = Path::new(&path_string);
+    if !path.exists() {
+        std::fs::create_dir_all(path).unwrap();
+    }
+
+
+    // FILES
+    // Create user empty gpx
+    let file_location = format!("./data/gpx/users/{}/location_data.gpx", &user.uuid);
+    let mut file = File::create(&file_location).expect("create gpx error.");
+
+    // write empty gpx track
+    file.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx\n\tversion=\"1.1\"\n\tcreator=\"gpslog\">\n\n<trk>\n\t<name>gpslog</name>\n\t<trkseg>\n\t</trkseg>\n</gpx>").unwrap();
+    logging::info(format!("Created GPX file for user {}", &user.uuid), Some("database"));
+
+    // Create user db
     let filename = format!("data/db/users/{}/location_data.db", &user.uuid);
     let connection = sqlite::open(filename).unwrap();
     let query = "CREATE TABLE location (latitude INTEGER, longitude INTEGER, gathered_at INTEGER);";
 
     connection.execute(query).unwrap();
-    logging::info(format!("Created database for user {}. (device name: {})", &user.uuid, &user.device_name), Some("database"));
-    add_user_to_users_db(user);
-    create_user_gpx(user.uuid);
-}
-
-/// Create user directories
-fn create_user_dir(name: &str) {
-    let path_string = format!("./data/db/users/{}", name);
-    let path = Path::new(&path_string);
-    if !path.exists() {
-        std::fs::create_dir_all(path).unwrap();
-    }
-
-    let path_string = format!("./data/gpx/users/{}", name);
-    let path = Path::new(&path_string);
-    if !path.exists() {
-        std::fs::create_dir_all(path).unwrap();
-    }
-}
-
-/// Create empty gpx file
-fn create_user_gpx(uuid: Uuid) {
-    let file_location = format!("./data/gpx/users/{}/location_data.gpx", uuid);
-    let mut file = File::create(&file_location).expect("create gpx error.");
-    
-    // write empty gpx track etc.
-    file.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx\n\tversion=\"1.1\"\n\tcreator=\"gpslog\">\n\n<trk>\n\t<name>gpslog</name>\n\t<trkseg>\n\t</trkseg>\n</gpx>").unwrap();
-    logging::info(format!("Created GPX file for user {}", uuid), Some("database"));
 }
 
 
