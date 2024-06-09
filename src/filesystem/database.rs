@@ -41,10 +41,10 @@ fn init_user_filestructure(user: &User) {
     // FILES
     // Create user empty gpx
     let file_location = format!("./data/gpx/users/{}/location_data.gpx", &user.uuid);
-    let mut file = File::create(&file_location).expect("create gpx error.");
+    let mut file = File::create(file_location).expect("create gpx error.");
 
     // write empty gpx track
-    file.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx\n\tversion=\"1.1\"\n\tcreator=\"gpslog\">\n\n<trk>\n\t<name>gpslog</name>\n\t<trkseg>\n\t</trkseg>\n</gpx>").unwrap();
+    file.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx\n\tversion=\"1.1\"\n\tcreator=\"gpslog\">\n\n<trk>\n\t<name>Breadcrumb</name>\n\t<desc>gpslog location data</desc>\n\t<trkseg>\n\n\t</trkseg>\n</trk>\n</gpx>").unwrap();
     logging::info(format!("Created GPX file for user {}", &user.uuid), Some("database"));
 
     // Create user db
