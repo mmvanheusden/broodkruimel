@@ -21,7 +21,7 @@ async fn main() -> std::io::Result<()> {
             .service(favicon)
             .service(api::user::create_user)
             .service(api::user::get_user)
-            .service(api::location::add_location_to_user)
+            .service(api::geospatial::push_location)
     })
         .bind(("127.0.0.1", PORT))?
         .run()

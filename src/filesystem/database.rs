@@ -1,11 +1,12 @@
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::time;
 
 use sqlite::State;
 use uuid::Uuid;
 
-use crate::api::location::Location;
+use crate::api::geospatial::Location;
 use crate::api::user::User;
 use crate::logging;
 
@@ -19,7 +20,7 @@ pub fn initialize_new_user(user: &User) {
 /**
  * * Creates a directory structure for the specified [`User`]
  * * Creates empty database,gpx file for user.
-**/
+ **/
 fn init_user_filestructure(user: &User) {
     // DIRECTORIES
     // db
@@ -75,10 +76,10 @@ fn add_user_to_users_db(user: &User) {
 
 
 /// Adds a [`Location`] to a user's database.
-pub fn add_location_to_user_db(data: Location) {
-    let db_file = format!("data/db/users/{}/location_data.db", data.get_uuid());
+pub fn add_location_to_user_db(uuid: &Uuid, location: &Location) {
+    let db_file = format!("data/db/users/{}/location_data.db", &uuid);
     let connection = sqlite::open(db_file).unwrap();
-    connection.execute(format!("INSERT INTO location (latitude, longitude, gathered_at) VALUES ({}, {}, {})", data.get_lat_long().0, data.get_lat_long().1, data.get_gathered_at())).unwrap()
+    connection.execute(format!("INSERT INTO location (latitude, longitude, gathered_at) VALUES ({}, {}, {})", location.lat(), location.lon(), time::UNIX_EPOCH.elapsed().unwrap().as_millis())).unwrap()
 }
 
 // TODO: Learn more about lifetimes!

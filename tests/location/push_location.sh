@@ -16,8 +16,5 @@ fi
 LATITUDE=$((RANDOM%181-90))
 LONGITUDE=$((RANDOM%361-180))
 
-# Get timestamp
-TIMESTAMP=$(date +%s)
-
 # Push the location to the server
-curl -X POST -d "{\"uuid\": \"$UUID\", \"latitude\": $LATITUDE, \"longitude\": $LONGITUDE, \"gathered_at\": $TIMESTAMP}" -H "Content-type: application/json" http://0.0.0.0:8080/push_location
+curl -X POST -d "{\"uuid\": \"$UUID\", \"latitude\": $LATITUDE, \"longitude\": $LONGITUDE}" -H "Content-type: application/json" http://0.0.0.0:8080/push_location
