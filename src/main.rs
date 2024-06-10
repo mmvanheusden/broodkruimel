@@ -3,17 +3,27 @@ use actix_web::{App, get, HttpResponse, HttpServer, Responder};
 use crate::filesystem::initialize_file_structure;
 use crate::logging::{info};
 
+use clap::Parser;
+
 mod logging;
 mod api;
 mod filesystem;
 
-const PORT: u16 = 8765;
 const APP_NAME: &str = "Broodkruimel";
+
+#[derive(Parser, Debug)]
+#[command(version, about = "Broodkruimel is a server meant for storing \"breadcrumbs\".\nThe idea is that clients send a live GPS-location every x seconds, and the users can view and analyze that collected data later on.")]
+struct Args {
+    /// Override the default port.
+    #[clap(short, long, default_value = "8765")]
+    port: u16,
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let args = Args::parse();
     initialize_file_structure().await;
-    info(format!("Server up at http://127.0.0.1:{}", PORT), Some(APP_NAME));
+    info(format!("Server up at http://0.0.0.0:{}", args.port), Some(APP_NAME));
     HttpServer::new(|| {
         App::new()
             .service(hello)
@@ -23,7 +33,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::user::get_user)
             .service(api::geospatial::push_location)
     })
-        .bind(("127.0.0.1", PORT))?
+        .bind(("0.0.0.0", args.port))?
         .run()
         .await
 }
