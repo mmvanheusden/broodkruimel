@@ -7,7 +7,7 @@ mod logging;
 mod api;
 mod filesystem;
 
-const PORT: u16 = 8080;
+const PORT: u16 = 8765;
 const APP_NAME: &str = "Broodkruimel";
 
 #[actix_web::main]
@@ -18,6 +18,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(hello)
             .service(favicon)
+            .service(ping)
             .service(api::user::create_user)
             .service(api::user::get_user)
             .service(api::geospatial::push_location)
@@ -36,4 +37,10 @@ async fn hello() -> impl Responder {
 #[get("/favicon.ico")]
 async fn favicon() -> impl Responder {
     HttpResponse::ImATeapot()
+}
+
+#[get("/ping")]
+async fn ping() -> impl Responder {
+    info("Pong!", Some("Ping"));
+    HttpResponse::Ok().body("<h1>taco</h1>")
 }
