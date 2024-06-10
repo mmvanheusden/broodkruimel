@@ -41,6 +41,5 @@ async fn favicon() -> impl Responder {
 
 #[get("/ping")]
 async fn ping() -> impl Responder {
-    info("Pong!", Some("Ping"));
-    HttpResponse::Ok().body("<h1>taco</h1>")
+    HttpResponse::Ok().body("pong!")
 }
