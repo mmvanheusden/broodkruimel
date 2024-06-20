@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use actix_web::{HttpResponse, post, Responder};
+use actix_web::{HttpRequest, HttpResponse, put, Responder, web};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -17,7 +17,6 @@ pub struct Location {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LocationRequest {
-    uuid: String,
     latitude: f64,
     longitude: f64,
 }
@@ -38,12 +37,15 @@ impl Location {
     }
 }
 
-/// Adds a location to the user's location database
-#[post("/push_location")]
-pub async fn push_location(req_body: Json<LocationRequest>) -> impl Responder {
+/// Appends a location to the user's location database
+#[put("/api/users/{uuid}/location")]
+pub async fn push_location(path: web::Path<String>, req_body: Json<LocationRequest>, request: HttpRequest) -> impl Responder {
+    let uuid = path.into_inner().to_string();
     let location = Location::new(req_body.latitude, req_body.longitude);
-    add_location_to_user_db(&Uuid::from_str(&req_body.uuid.as_str()).unwrap(), &location);
-    add_location_to_gpx(Uuid::from_str(req_body.uuid.clone().as_str()).unwrap(), &location);
-    info(format!("User {} has send their location.", req_body.uuid), Some("push_location"));
+
+    add_location_to_user_db(&Uuid::from_str(&uuid).unwrap(), &location);
+    add_location_to_gpx(Uuid::from_str(&uuid).unwrap(), &location);
+
+    info(format!("IP: {} has send their location.", &request.peer_addr().unwrap().to_string()), Some(format!("PUT: /api/users/{}/location", &uuid)));
     HttpResponse::Ok().finish()
 }

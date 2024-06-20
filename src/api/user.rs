@@ -1,14 +1,14 @@
 use std::fmt::Debug;
 
 use actix_web::{get, HttpRequest, HttpResponse, post, Responder};
-use actix_web::web::{Json};
+use actix_web::web::Json;
 use chrono;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
 use crate::filesystem::database::{fetch_users, initialize_new_user};
 use crate::logging::{error, info};
-
 
 /// Represents a user in the system.
 #[derive(Debug)]
@@ -38,28 +38,32 @@ impl User {
 }
 
 /// Create a new [`User`] and return the generated UUIDv4.
-#[post("/create_user")]
-pub async fn create_user(req_body: Json<UserRequest>) -> impl Responder {
+#[post("/api/users")]
+pub async fn create_user(req_body: Json<UserRequest>, request: HttpRequest) -> impl Responder {
+    if req_body.device_id.contains('"') || req_body.device_id.contains('\'') {return HttpResponse::BadRequest().body("Device ID can't contain special characters (', \").")} // TODO: Handle special characters in device IDs
+
     let new_user = User::new(req_body.into_inner().device_id);
+
     initialize_new_user(&new_user); // Create database.
+    info(format!("IP {}: Created new user {}.", request.peer_addr().unwrap().ip(), &new_user.uuid), Some("POST: /api/users"));
+
     HttpResponse::Created().body(new_user.uuid.to_string())
 }
 
-
 /// Get a list of all users in the system.
 /// # Returns
-/// A JSON array of all the users in the system.
+/// A JSON array with all the users in the system.
 /// # Errors
 /// If the lookup of users fails, an internal server error is returned.
-#[get("/list_users")]
-pub async fn get_user(request: HttpRequest) -> HttpResponse {
+#[get("/api/users")]
+pub async fn get_users(request: HttpRequest) -> HttpResponse {
     // We build a shitty JSON array by hand. This is fine for now but not future-proof.
     let mut response = String::from("[");
 
     let users = match fetch_users() {
         Ok(users) => users,
-        Err(_) => {
-            error(format!("IP {} requested list of users, but the lookup failed.", request.peer_addr().unwrap().ip()), Some("list_users"));
+        Err(e) => {
+            error(format!("IP {} requested list of users, but the lookup failed with error: {e}", request.peer_addr().unwrap().ip()), Some("list_users"));
             return HttpResponse::InternalServerError().body("Could not fetch users. Please try again later.");
         }
     };
@@ -72,6 +76,6 @@ pub async fn get_user(request: HttpRequest) -> HttpResponse {
     response.pop(); // Remove the last comma.
     response.push(']');
 
-    info(format!("IP {} requested list of users", request.peer_addr().unwrap().ip()), Some("list_users"));
+    info(format!("IP {}: Requested list of users.", request.peer_addr().unwrap().ip()), Some("GET: /api/users"));
     HttpResponse::Ok().body(response)
 }

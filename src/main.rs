@@ -1,9 +1,8 @@
 use actix_web::{App, get, HttpResponse, HttpServer, Responder};
+use clap::Parser;
 
 use crate::filesystem::initialize_file_structure;
-use crate::logging::{info};
-
-use clap::Parser;
+use crate::logging::info;
 
 mod logging;
 mod api;
@@ -30,7 +29,7 @@ async fn main() -> std::io::Result<()> {
             .service(favicon)
             .service(ping)
             .service(api::user::create_user)
-            .service(api::user::get_user)
+            .service(api::user::get_users)
             .service(api::geospatial::push_location)
     })
         .bind(("0.0.0.0", args.port))?
