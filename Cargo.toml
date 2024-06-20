@@ -1,13 +1,19 @@
 [package]
 name = "broodkruimel"
+description = "A server that stores a personal GPS breadcrumb for the rest of your life."
+repository = "https://github.com/mmvanheusden/broodkruimel"
+categories = ["data-structures", "filesystem", "science::geo"]
 version = "0.2.0"
 edition = "2021"
+authors = ["mmvanheusden"]
+license = "AGPL-3"
+
 
 [dependencies]
-actix-web = "4"
+actix-web = "4.8.0"
 chrono = "0.4.38"
-serde = { version = "1.0.202", features = ["derive"] }
-uuid = { version = "1.8.0", features = ["v4", "fast-rng", "serde"] }
+serde = { version = "1.0.203", features = ["derive"] }
+uuid = { version = "1.8.0", features = ["v4", "fast-rng"] }
 colored = "2.1.0"
 sqlite = "0.36.0"
 clap = { version = "4.5.7", features = ["derive"] }
