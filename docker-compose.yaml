@@ -1,0 +1,9 @@
+services:
+  broodkruimel:
+    container_name: broodkruimel # Can be anything
+    build:
+      context: .
+      target: final
+    ports:
+      # ⬇️ Change this to use a different port than the default (8765) one.
+      - 8765:8765

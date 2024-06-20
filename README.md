@@ -13,3 +13,8 @@ A server written in Rust that stores a personal GPS breadcrumb for the rest of y
   * *Hey AI, tell me a fun fact about my location history!*:  
     * **Sure! you went a whopping 8 (!) times to your local Albert Heijn grocery store between 05-12-2023-11-12-2023. Special!**
     * **You have visited all seven continents within a 276-day timespan. Impressive!**
+
+
+### Docker
+Run this in docker by first cloning the repo, then running `docker compose up --build`.  
+[Docker's Rust guide](https://docs.docker.com/language/rust/) <- This was used to create the Dockerfile.
