@@ -14,7 +14,7 @@ use crate::logging;
 pub fn initialize_new_user(user: &User) {
     init_user_filestructure(&user);
     add_user_to_users_db(user);
-    logging::info(format!("Created database for user {}. (device name: {})", &user.uuid, &user.device_name), Some("database"));
+    logging::info(format!("Created database for user {}.", &user.uuid), Some("database"));
 }
 
 /**

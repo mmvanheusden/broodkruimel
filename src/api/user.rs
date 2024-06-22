@@ -45,7 +45,7 @@ pub async fn create_user(req_body: Json<UserRequest>, request: HttpRequest) -> i
     let new_user = User::new(req_body.into_inner().device_id);
 
     initialize_new_user(&new_user); // Create database.
-    info(format!("IP {}: Created new user {}.", request.peer_addr().unwrap().ip(), &new_user.uuid), Some("POST: /api/users"));
+    info(format!("IP {}: Created new user {}.\n", request.peer_addr().unwrap().ip(), &new_user.uuid), Some("POST: /api/users"));
 
     HttpResponse::Created().body(new_user.uuid.to_string())
 }
