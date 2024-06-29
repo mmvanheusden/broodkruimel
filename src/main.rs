@@ -31,6 +31,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::user::create_user)
             .service(api::user::get_users)
             .service(api::geospatial::push_location)
+            .service(api::user::get_user)
     })
         .bind(("0.0.0.0", args.port))?
         .run()

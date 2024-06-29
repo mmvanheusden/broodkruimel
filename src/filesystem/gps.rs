@@ -1,12 +1,11 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::fs::OpenOptions;
+use std::io::{BufRead, BufReader, BufWriter, Write};
 
-use uuid::Uuid;
 use crate::api::geospatial::Location;
 
 /// Add a [`Location`] to a user's gpx.
-pub fn add_location_to_gpx(uuid: Uuid, location: &Location) {
+pub fn add_location_to_gpx(uuid: String, location: &Location) {
     let filepath = format!("./data/gpx/users/{}/location_data.gpx", uuid);
     let gpx_file = File::options().read(true).open(&filepath).unwrap();
     let line_count = BufReader::new(&gpx_file).lines().count();

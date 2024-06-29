@@ -1,19 +1,19 @@
 use std::fmt::Debug;
 
-use actix_web::{get, HttpRequest, HttpResponse, post, Responder};
+use actix_web::{get, HttpRequest, HttpResponse, post, Responder, web};
 use actix_web::web::Json;
 use chrono;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::filesystem::database::{fetch_users, initialize_new_user};
+use crate::filesystem::database::{fetch_users, get_user_from_users_db, initialize_new_user};
 use crate::logging::{error, info};
 
 /// Represents a user in the system.
 #[derive(Debug)]
 pub struct User {
-    pub uuid: Uuid,
+    pub uuid: String,
     pub device_name: String,
     pub created_at: DateTime<Utc>,
 }
@@ -30,9 +30,32 @@ impl User {
     /// Create a new [`User`] with a random UUIDv4 and the current time.
     pub fn new(device_identifier: String) -> User {
         User {
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             created_at: Utc::now(),
             device_name: device_identifier,
+        }
+    }
+
+    /// Creates a [`User`] from an UUID. Make sure the user exists in the users DB.
+    pub fn from_uuid(uuid: String) -> Result<User, &'static str> {
+        match get_user_from_users_db(uuid.clone()) {
+            Ok((_, device_name, created_at)) => {
+                println!("{}, {}", &device_name, &created_at);
+                Ok(User {
+                    uuid,
+                    created_at: Utc::now(), // TODO
+                    device_name,
+                })
+            }
+            Err(msg) => {
+                if msg == "User not in users DB" {
+                    Err("User not found on the server.")
+                } else if msg == "Users DB doesn't exist!" {
+                    Err("There are no users on this server yet!")
+                } else {
+                    Err(msg)
+                }
+            }
         }
     }
 }
@@ -40,14 +63,14 @@ impl User {
 /// Create a new [`User`] and return the generated UUIDv4.
 #[post("/api/users")]
 pub async fn create_user(req_body: Json<UserRequest>, request: HttpRequest) -> impl Responder {
-    if req_body.device_id.contains('"') || req_body.device_id.contains('\'') {return HttpResponse::BadRequest().body("Device ID can't contain special characters (', \").")} // TODO: Handle special characters in device IDs
+    if req_body.device_id.contains('"') || req_body.device_id.contains('\'') { return HttpResponse::BadRequest().body("Device ID can't contain special characters (', \")."); } // TODO: Handle special characters in device IDs
 
     let new_user = User::new(req_body.into_inner().device_id);
 
     initialize_new_user(&new_user); // Create database.
     info(format!("IP {}: Created new user {}.\n", request.peer_addr().unwrap().ip(), &new_user.uuid), Some("POST: /api/users"));
 
-    HttpResponse::Created().body(new_user.uuid.to_string())
+    HttpResponse::Created().body(new_user.uuid)
 }
 
 /// Get a list of all users in the system.
@@ -78,4 +101,19 @@ pub async fn get_users(request: HttpRequest) -> HttpResponse {
 
     info(format!("IP {}: Requested list of users.", request.peer_addr().unwrap().ip()), Some("GET: /api/users"));
     HttpResponse::Ok().body(response)
+}
+
+
+/// First converts a user's UUID into a [`User`], and returns its info.
+/// If the user is not found in the users DB, return an [`InternalServerError`].
+#[get("/api/users/{uuid}")]
+pub async fn get_user(path: web::Path<String>) -> HttpResponse {
+    match User::from_uuid(path.into_inner().to_string()) {
+        Ok(user) => {
+            HttpResponse::Ok().body(user.uuid)
+        }
+        Err(msg) => {
+            HttpResponse::InternalServerError().body(msg)
+        }
+    }
 }

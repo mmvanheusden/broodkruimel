@@ -4,7 +4,6 @@ use std::path::Path;
 use std::time;
 
 use sqlite::State;
-use uuid::Uuid;
 
 use crate::api::geospatial::Location;
 use crate::api::user::User;
@@ -76,7 +75,7 @@ fn add_user_to_users_db(user: &User) {
 
 
 /// Adds a [`Location`] to a user's database.
-pub fn add_location_to_user_db(uuid: &Uuid, location: &Location) {
+pub fn add_location_to_user_db(uuid: String, location: &Location) {
     let db_file = format!("data/db/users/{}/location_data.db", &uuid);
     let connection = sqlite::open(db_file).unwrap();
     connection.execute(format!("INSERT INTO location (latitude, longitude, gathered_at) VALUES ({}, {}, {})", location.lat(), location.lon(), time::UNIX_EPOCH.elapsed().unwrap().as_millis())).unwrap()
@@ -108,4 +107,34 @@ pub fn fetch_users() -> Result<Vec<String>, &'static str> {
     }
 
     Ok(users)
+}
+
+
+/// Get the full user data from a user from the users DB. Errors when the user doesn't exist in the db
+pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, String), &'static str> {
+    let users_db = Path::new("./data/db/users/users.db");
+
+    if users_db.exists() {
+        let connection = sqlite::open(users_db).unwrap();
+        let query = format!("SELECT * FROM users WHERE name = '{}'", &uuid);
+        
+        let mut statement = connection.prepare(query).unwrap();
+/*        let count = statement.iter().count();
+        println!("{}", count);*/
+        
+        // Error when statement lines is 0. Meaning the user was not found in the DB
+        if statement.iter().count() < 1 {
+            return Err("User not in users DB")
+        }
+
+        statement.next().unwrap();
+        
+        let name = statement.read::<String, _>("name").unwrap();
+        let device_name = statement.read::<String, _>("device_name").unwrap();
+        let created_at = statement.read::<String, _>("created_at").unwrap();
+
+        Ok((name, device_name, created_at))
+    } else {
+        Err("Users DB doesn't exist!")
+    }
 }

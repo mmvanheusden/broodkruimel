@@ -3,7 +3,6 @@ use std::str::FromStr;
 use actix_web::{HttpRequest, HttpResponse, put, Responder, web};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::filesystem::database::add_location_to_user_db;
 use crate::filesystem::gps::add_location_to_gpx;
@@ -43,8 +42,8 @@ pub async fn push_location(path: web::Path<String>, req_body: Json<LocationReque
     let uuid = path.into_inner().to_string();
     let location = Location::new(req_body.latitude, req_body.longitude);
 
-    add_location_to_user_db(&Uuid::from_str(&uuid).unwrap(), &location);
-    add_location_to_gpx(Uuid::from_str(&uuid).unwrap(), &location);
+    add_location_to_user_db(uuid.clone(), &location);
+    add_location_to_gpx(uuid.clone(), &location);
 
     info(format!("IP: {} has send their location.", &request.peer_addr().unwrap().to_string()), Some(format!("PUT: /api/users/{}/location", &uuid)));
     HttpResponse::Ok().finish()
