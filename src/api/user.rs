@@ -16,6 +16,7 @@ pub struct User {
     pub uuid: String,
     pub device_name: String,
     pub created_at: DateTime<Utc>,
+    pub last_location: Option<DateTime<Utc>>,
 }
 
 /// Represents the request body for creating a new user. The json that is received should have a device_id field.  
@@ -33,18 +34,20 @@ impl User {
             uuid: Uuid::new_v4().to_string(),
             created_at: Utc::now(),
             device_name: device_identifier,
+            last_location: None,
         }
     }
 
     /// Creates a [`User`] from a UUID. Make sure the user exists in the users DB.
     pub fn from_uuid(uuid: String) -> Result<User, &'static str> {
         match get_user_from_users_db(uuid.clone()) {
-            Ok((_, device_name, created_at)) => {
+            Ok((_, device_name, created_at, last_location)) => {
                 // println!("UUID: {} | DEVICE NAME: {} | CREATED_AT: {}",uuid, &device_name, &created_at);
                 Ok(User {
                     uuid,
                     created_at: DateTime::from_timestamp(created_at, 0).unwrap(),
                     device_name,
+                    last_location: Some(last_location),
                 })
             }
             Err(msg) => {
@@ -106,8 +109,23 @@ pub async fn get_user(path: web::Path<String>, request: HttpRequest) -> HttpResp
     match User::from_uuid(requested_uuid.clone()) {
         Ok(user) => {
             info(format!("IP {} requested user lookup for user {}", request.peer_addr().unwrap().ip(), user.uuid), Some("get_user"));
-            HttpResponse::Ok().body(format!("UUID: {}\nDEVICE NAME: {}\nCREATED AT: {}", user.uuid, user.device_name, user.created_at))
+
+            // Timestamp = 0 (placeholder) -> "Never"
+            // Timestamp is not set (should not happen) -> "Unknown"
+            let last_location = match user.last_location {
+                Some(ref dt) if dt.timestamp() == 0 => "Never".to_string(),
+                Some(ref dt) => dt.to_string(),
+                None => "Unknown".to_string(),
+            };
+
+            HttpResponse::Ok().body(format!("UUID:                {}\nDEVICE NAME:         {}\nCREATED AT:          {}\nLAST LOCATION:       {}",
+                                            user.uuid,
+                                            user.device_name,
+                                            user.created_at,
+                                            last_location
+            ))
         }
+
         Err(msg) => {
             error(format!("IP {} requested user lookup for (possibly non-existent) user {}. Lookup failed with error: {}", request.peer_addr().unwrap().ip(), requested_uuid, msg), Some("get_user"));
 

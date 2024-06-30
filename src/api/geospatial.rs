@@ -1,10 +1,10 @@
-use std::str::FromStr;
-
 use actix_web::{HttpRequest, HttpResponse, put, Responder, web};
 use actix_web::web::Json;
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use crate::filesystem::database::add_location_to_user_db;
+use crate::api::user::User;
+use crate::filesystem::database::{add_location_to_user_db, update_user_last_location};
 use crate::filesystem::gps::add_location_to_gpx;
 use crate::logging::info;
 
@@ -41,7 +41,11 @@ impl Location {
 pub async fn push_location(path: web::Path<String>, req_body: Json<LocationRequest>, request: HttpRequest) -> impl Responder {
     let uuid = path.into_inner().to_string();
     let location = Location::new(req_body.latitude, req_body.longitude);
+    let mut user = User::from_uuid(uuid.clone()).unwrap();
 
+    user.last_location = Some(Utc::now()); // Update user's last location. TODO: make clients send a location and use that.
+
+    update_user_last_location(user);
     add_location_to_user_db(uuid.clone(), &location);
     add_location_to_gpx(uuid.clone(), &location);
 

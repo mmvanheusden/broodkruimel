@@ -3,6 +3,7 @@ use std::io::Write;
 use std::path::Path;
 use std::time;
 
+use chrono::{DateTime, Utc};
 use sqlite::State;
 
 use crate::api::geospatial::Location;
@@ -67,14 +68,22 @@ fn add_user_to_users_db(user: &User) {
     // If the database does not exist, modify the query to also create the table.
     if !file.exists() {
         // Writes header and user.
-        query = format!("CREATE TABLE users (name TEXT, device_name TEXT, created_at INTEGER); INSERT INTO users (name, device_name, created_at) VALUES ('{}','{}', {});", user.uuid, user.device_name, user.created_at.timestamp());
+        query = format!("CREATE TABLE users (uuid TEXT, device_name TEXT, created_at INTEGER, last_location INTEGER); INSERT INTO users (uuid, device_name, created_at, last_location) VALUES ('{}','{}', {}, 0);", user.uuid, user.device_name, user.created_at.timestamp());
     } else {
         // Only writes user.
-        query = format!("INSERT INTO users (name, device_name, created_at) VALUES ('{}','{}', {});", user.uuid, user.device_name, user.created_at.timestamp());
+        query = format!("INSERT INTO users (uuid, device_name, created_at, last_location) VALUES ('{}','{}', {}, 0);", user.uuid, user.device_name, user.created_at.timestamp());
     }
 
     let connection = sqlite::open(USERS_DB).unwrap();
     connection.execute(query).unwrap();
+}
+
+
+/// Updates a `last_location` value from a user in the users database.
+pub fn update_user_last_location(user: User) {
+    let query = format!("SELECT uuid,last_location FROM users; UPDATE users SET last_location = {} WHERE uuid = '{}';", user.last_location.unwrap_or(DateTime::from_timestamp(0, 0).unwrap()).timestamp(), user.uuid);
+
+    sqlite::open(USERS_DB).unwrap().execute(query).unwrap();
 }
 
 
@@ -100,13 +109,13 @@ pub fn fetch_users() -> Result<Vec<String>, &'static str> {
         return Err("The users database file was not found. Perhaps there are no users registered yet?");
     }
 
-    let query = "SELECT name FROM users";
+    let query = "SELECT uuid FROM users";
     let connection = sqlite::open(USERS_DB).unwrap();
 
     let mut statement = connection.prepare(query).unwrap();
 
     while let Ok(State::Row) = statement.next() {
-        let uuid = statement.read::<String, _>("name").unwrap();
+        let uuid = statement.read::<String, _>("uuid").unwrap();
         users.push(uuid);
     }
 
@@ -118,33 +127,35 @@ pub fn fetch_users() -> Result<Vec<String>, &'static str> {
 /// ## Returns
 /// ```
 /// Ok((
-///     name: String,
+///     uuid: String,
 ///     device_name: String,
-///     created_at: u64
+///     created_at: i64,
+///     last_location: DateTime<Utc>
 /// ))
 /// ```
-pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, i64), &'static str> {
+pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, i64, DateTime<Utc>), &'static str> {
     let users_db = Path::new(USERS_DB);
 
     if users_db.exists() {
         let connection = sqlite::open(users_db).unwrap();
-        let query = format!("SELECT * FROM users WHERE name = '{}'", &uuid);
+        let query = format!("SELECT * FROM users WHERE uuid = '{}'", &uuid);
 
         let mut statement = connection.prepare(query).unwrap();
 
         // println!("{}", statement.iter().count());
         // Error when statement lines is 0. Meaning the user was not found in the DB
         if statement.iter().count() < 1 {
-            return Err("User not in users DB")
+            return Err("User not in users DB");
         }
 
         statement.next().unwrap();
 
-        let name = statement.read::<String, _>("name").unwrap();
+        let uuid = statement.read::<String, _>("uuid").unwrap();
         let device_name = statement.read::<String, _>("device_name").unwrap();
         let created_at = statement.read::<String, _>("created_at").unwrap();
+        let last_location = statement.read::<String, _>("last_location").unwrap();
 
-        Ok((name, device_name, created_at.parse().unwrap()))
+        Ok((uuid, device_name, created_at.parse().unwrap(), DateTime::from_timestamp(last_location.parse().unwrap(), 0).unwrap()))
     } else {
         Err("Users DB doesn't exist!")
     }
