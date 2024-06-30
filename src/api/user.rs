@@ -36,25 +36,19 @@ impl User {
         }
     }
 
-    /// Creates a [`User`] from an UUID. Make sure the user exists in the users DB.
+    /// Creates a [`User`] from a UUID. Make sure the user exists in the users DB.
     pub fn from_uuid(uuid: String) -> Result<User, &'static str> {
         match get_user_from_users_db(uuid.clone()) {
             Ok((_, device_name, created_at)) => {
-                println!("{}, {}", &device_name, &created_at);
+                // println!("UUID: {} | DEVICE NAME: {} | CREATED_AT: {}",uuid, &device_name, &created_at);
                 Ok(User {
                     uuid,
-                    created_at: Utc::now(), // TODO
+                    created_at: DateTime::from_timestamp(created_at, 0).unwrap(),
                     device_name,
                 })
             }
             Err(msg) => {
-                if msg == "User not in users DB" {
-                    Err("User not found on the server.")
-                } else if msg == "Users DB doesn't exist!" {
-                    Err("There are no users on this server yet!")
-                } else {
-                    Err(msg)
-                }
+                Err(msg)
             }
         }
     }
@@ -68,7 +62,7 @@ pub async fn create_user(req_body: Json<UserRequest>, request: HttpRequest) -> i
     let new_user = User::new(req_body.into_inner().device_id);
 
     initialize_new_user(&new_user); // Create database.
-    info(format!("IP {}: Created new user {}.\n", request.peer_addr().unwrap().ip(), &new_user.uuid), Some("POST: /api/users"));
+    info(format!("IP {}: Created new user {}.", request.peer_addr().unwrap().ip(), &new_user.uuid), Some("POST: /api/users"));
 
     HttpResponse::Created().body(new_user.uuid)
 }
@@ -107,13 +101,27 @@ pub async fn get_users(request: HttpRequest) -> HttpResponse {
 /// First converts a user's UUID into a [`User`], and returns its info.
 /// If the user is not found in the users DB, return an [`InternalServerError`].
 #[get("/api/users/{uuid}")]
-pub async fn get_user(path: web::Path<String>) -> HttpResponse {
-    match User::from_uuid(path.into_inner().to_string()) {
+pub async fn get_user(path: web::Path<String>, request: HttpRequest) -> HttpResponse {
+    let requested_uuid = path.into_inner().to_string();
+    match User::from_uuid(requested_uuid.clone()) {
         Ok(user) => {
-            HttpResponse::Ok().body(user.uuid)
+            info(format!("IP {} requested user lookup for user {}", request.peer_addr().unwrap().ip(), user.uuid), Some("get_user"));
+            HttpResponse::Ok().body(format!("UUID: {}\nDEVICE NAME: {}\nCREATED AT: {}", user.uuid, user.device_name, user.created_at))
         }
         Err(msg) => {
-            HttpResponse::InternalServerError().body(msg)
+            error(format!("IP {} requested user lookup for (possibly non-existent) user {}. Lookup failed with error: {}", request.peer_addr().unwrap().ip(), requested_uuid, msg), Some("get_user"));
+
+            match msg {
+                "User not in users DB" => {
+                    HttpResponse::InternalServerError().body("User not found on the server.")
+                }
+                "Users DB doesn't exist!" => {
+                    HttpResponse::InternalServerError().body("There are no users on this server yet!")
+                }
+                _ => {
+                    HttpResponse::InternalServerError().body(msg)
+                }
+            }
         }
     }
 }

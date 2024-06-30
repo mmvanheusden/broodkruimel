@@ -110,8 +110,16 @@ pub fn fetch_users() -> Result<Vec<String>, &'static str> {
 }
 
 
-/// Get the full user data from a user from the users DB. Errors when the user doesn't exist in the db
-pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, String), &'static str> {
+/// Get the full user data from a user from the users DB. Returns error when the user doesn't exist in the db
+/// ## Returns
+/// ```
+/// Ok((
+///     name: String,
+///     device_name: String,
+///     created_at: u64
+/// ))
+/// ```
+pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, i64), &'static str> {
     let users_db = Path::new("./data/db/users/users.db");
 
     if users_db.exists() {
@@ -119,9 +127,8 @@ pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, String), 
         let query = format!("SELECT * FROM users WHERE name = '{}'", &uuid);
         
         let mut statement = connection.prepare(query).unwrap();
-/*        let count = statement.iter().count();
-        println!("{}", count);*/
-        
+
+        // println!("{}", statement.iter().count());
         // Error when statement lines is 0. Meaning the user was not found in the DB
         if statement.iter().count() < 1 {
             return Err("User not in users DB")
@@ -133,7 +140,7 @@ pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, String), 
         let device_name = statement.read::<String, _>("device_name").unwrap();
         let created_at = statement.read::<String, _>("created_at").unwrap();
 
-        Ok((name, device_name, created_at))
+        Ok((name, device_name, created_at.parse().unwrap()))
     } else {
         Err("Users DB doesn't exist!")
     }
