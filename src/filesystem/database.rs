@@ -9,11 +9,15 @@ use crate::api::geospatial::Location;
 use crate::api::user::User;
 use crate::logging;
 
+/// Each user is stored in this single database file.
+const USERS_DB: &str = "data/db/users/users.db";
+
+
 /// Create a folder for the user, and initialize the database where the user data will be stored.
 pub fn initialize_new_user(user: &User) {
-    init_user_filestructure(&user);
+    init_user_filestructure(user);
     add_user_to_users_db(user);
-    logging::info(format!("Created database for user {}.", &user.uuid), Some("database"));
+    logging::info(format!("Created database for user {}", &user.uuid), Some("database"));
 }
 
 /**
@@ -44,7 +48,7 @@ fn init_user_filestructure(user: &User) {
 
     // write empty gpx track
     file.write_all(b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<gpx\n\tversion=\"1.1\"\n\tcreator=\"Broodkruimel\">\n\n<trk>\n\t<name>Breadcrumb</name>\n\t<desc>Broodkruimel location data</desc>\n\t<trkseg>\n\n\t</trkseg>\n</trk>\n</gpx>").unwrap();
-    logging::info(format!("Created GPX file for user {}", &user.uuid), Some("database"));
+    logging::info(format!("Created GPX file for user {}.", &user.uuid), Some("database"));
 
     // Create user db
     let filename = format!("data/db/users/{}/location_data.db", &user.uuid);
@@ -57,7 +61,7 @@ fn init_user_filestructure(user: &User) {
 
 /// Append the user to the users database. If the database does not exist, create it.
 fn add_user_to_users_db(user: &User) {
-    let file = Path::new("./data/db/users/users.db");
+    let file = Path::new(USERS_DB);
     let query: String;
 
     // If the database does not exist, modify the query to also create the table.
@@ -69,7 +73,7 @@ fn add_user_to_users_db(user: &User) {
         query = format!("INSERT INTO users (name, device_name, created_at) VALUES ('{}','{}', {});", user.uuid, user.device_name, user.created_at.timestamp());
     }
 
-    let connection = sqlite::open("data/db/users/users.db").unwrap();
+    let connection = sqlite::open(USERS_DB).unwrap();
     connection.execute(query).unwrap();
 }
 
@@ -89,7 +93,7 @@ pub fn add_location_to_user_db(uuid: String, location: &Location) {
 /// * [`Ok`] With a [`Vec<String>`] with a list of user UUIDs.
 /// * [`Err`] With an error message.
 pub fn fetch_users() -> Result<Vec<String>, &'static str> {
-    let users_db = Path::new("./data/db/users/users.db");
+    let users_db = Path::new(USERS_DB);
     let mut users: Vec<String> = Vec::new();
     // Check if the file even exists
     if !users_db.exists() {
@@ -97,7 +101,7 @@ pub fn fetch_users() -> Result<Vec<String>, &'static str> {
     }
 
     let query = "SELECT name FROM users";
-    let connection = sqlite::open("data/db/users/users.db").unwrap();
+    let connection = sqlite::open(USERS_DB).unwrap();
 
     let mut statement = connection.prepare(query).unwrap();
 
@@ -120,12 +124,12 @@ pub fn fetch_users() -> Result<Vec<String>, &'static str> {
 /// ))
 /// ```
 pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, i64), &'static str> {
-    let users_db = Path::new("./data/db/users/users.db");
+    let users_db = Path::new(USERS_DB);
 
     if users_db.exists() {
         let connection = sqlite::open(users_db).unwrap();
         let query = format!("SELECT * FROM users WHERE name = '{}'", &uuid);
-        
+
         let mut statement = connection.prepare(query).unwrap();
 
         // println!("{}", statement.iter().count());
@@ -135,7 +139,7 @@ pub fn get_user_from_users_db(uuid: String) -> Result<(String, String, i64), &'s
         }
 
         statement.next().unwrap();
-        
+
         let name = statement.read::<String, _>("name").unwrap();
         let device_name = statement.read::<String, _>("device_name").unwrap();
         let created_at = statement.read::<String, _>("created_at").unwrap();
