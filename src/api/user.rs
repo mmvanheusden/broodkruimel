@@ -13,14 +13,18 @@ use crate::logging::{error, info};
 /// Represents a user in the system.
 #[derive(Debug)]
 pub struct User {
+    /// A UUIDv4 unique for each [`User`] That uses the application.
     pub uuid: String,
+    /// A unique device name associated in some way to the hardware the client is using.
     pub device_name: String,
+    /// The date the user is created at.
     pub created_at: DateTime<Utc>,
+    /// The last time the client send a location.
     pub last_location: Option<DateTime<Utc>>,
 }
 
-/// Represents the request body for creating a new user. The json that is received should have a device_id field.  
-/// This struct is used to deserialize the request body into a UserRequest struct and then create a new [`User`].
+/// Represents the request body for creating a new user. The json that is received should obviously have a device_id field.
+/// This struct is used to deserialize the request body into a [`UserResquest`] struct and then create a new [`User`].
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UserRequest {
     pub device_id: String,
@@ -43,6 +47,7 @@ impl User {
         match get_user_from_users_db(uuid.clone()) {
             Ok((_, device_name, created_at, last_location)) => {
                 // println!("UUID: {} | DEVICE NAME: {} | CREATED_AT: {}",uuid, &device_name, &created_at);
+                //todo: validate uuid
                 Ok(User {
                     uuid,
                     created_at: DateTime::from_timestamp(created_at, 0).unwrap(),
