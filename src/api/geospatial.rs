@@ -14,12 +14,6 @@ pub struct Location {
     longitude: f64,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LocationRequest {
-    latitude: f64,
-    longitude: f64,
-}
-
 impl Location {
     pub fn new(lat: f64, lon: f64) -> Location {
         Location {
@@ -38,9 +32,9 @@ impl Location {
 
 /// Appends a location to the user's location database
 #[put("/api/users/{uuid}/location")]
-pub async fn push_location(path: web::Path<String>, req_body: Json<LocationRequest>, request: HttpRequest) -> impl Responder {
+pub async fn push_location(path: web::Path<String>, req_body: Json<Location>, request: HttpRequest) -> impl Responder {
     let uuid = path.into_inner().to_string();
-    let location = Location::new(req_body.latitude, req_body.longitude);
+    let location = req_body.into_inner();
     let mut user = User::from_uuid(uuid.clone()).unwrap();
 
     user.last_location = Some(Utc::now()); // Update user's last location. TODO: make clients send a location and use that.
