@@ -11,7 +11,7 @@ use crate::filesystem::database::{fetch_users, get_user_from_users_db, initializ
 use crate::logging::{error, info};
 
 /// Represents a user in the system.
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct User {
     pub uuid: String,
     pub device_name: String,
@@ -110,20 +110,21 @@ pub async fn get_user(path: web::Path<String>, request: HttpRequest) -> HttpResp
         Ok(user) => {
             info(format!("IP {} requested user lookup for user {}", request.peer_addr().unwrap().ip(), user.uuid), Some("get_user"));
 
-            // Timestamp = 0 (placeholder) -> "Never"
-            // Timestamp is not set (should not happen) -> "Unknown"
-            let last_location = match user.last_location {
-                Some(ref dt) if dt.timestamp() == 0 => "Never".to_string(),
-                Some(ref dt) => dt.to_string(),
-                None => "Unknown".to_string(),
-            };
-
-            HttpResponse::Ok().body(format!("UUID:                {}\nDEVICE NAME:         {}\nCREATED AT:          {}\nLAST LOCATION:       {}",
-                                            user.uuid,
-                                            user.device_name,
-                                            user.created_at,
-                                            last_location
-            ))
+            HttpResponse::Ok().json(user)
+            
+            // // Timestamp = 0 (placeholder) -> "Never"
+            // // Timestamp is not set (should not happen) -> "Unknown"
+            // let last_location = match user.last_location {
+            //     Some(ref dt) if dt.timestamp() == 0 => "Never".to_string(),
+            //     Some(ref dt) => dt.to_string(),
+            //     None => "Unknown".to_string(),
+            // };
+            // HttpResponse::Ok().body(format!("UUID:                {}\nDEVICE NAME:         {}\nCREATED AT:          {}\nLAST LOCATION:       {}",
+            //                                 user.uuid,
+            //                                 user.device_name,
+            //                                 user.created_at,
+            //                                 last_location
+            // ))
         }
 
         Err(msg) => {
