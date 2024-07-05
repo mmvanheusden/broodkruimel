@@ -44,10 +44,13 @@ impl User {
 
     /// Creates a [`User`] from a UUID. Make sure the user exists in the users DB.
     pub fn from_uuid(uuid: String) -> Result<User, &'static str> {
+        if Uuid::try_parse(uuid.as_str()).is_err() {
+            return Err("UUID is invalid.");
+        }
         match get_user_from_users_db(uuid.clone()) {
             Ok((_, device_name, created_at, last_location)) => {
                 // println!("UUID: {} | DEVICE NAME: {} | CREATED_AT: {}",uuid, &device_name, &created_at);
-                //todo: validate uuid
+                
                 Ok(User {
                     uuid,
                     created_at: DateTime::from_timestamp(created_at, 0).unwrap(),
